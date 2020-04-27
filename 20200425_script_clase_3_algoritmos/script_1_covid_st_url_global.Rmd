@@ -1,0 +1,164 @@
+---
+title: "script_1_covid_st_url_global.R"
+author: "Gonzalo Plaza"
+date: "4/25/2020"
+output: html_document
+---
+---
+
+```{r setup, include=FALSE}
+###############################################################################
+#Script: script_2_05_movilidad.Rmd
+#Descripción: transcripción de script 20200425-Algoritmos-Cdatos-UAustral
+#Autor: Gonzalo Plaza 
+#Email: gonzaloplazagomez@gmail.com
+#Fecha creacion: 25-04-2020
+###############################################################################
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r include=FALSE}
+###############################################
+# figura st de confirmados y muertes global 2020-03-15  
+# version actual:   2020-04-26
+# se corrigen lineas 71 y 72, se elimina codigo SQL
+###############################################
+
+# Bibliotecas a importar ----
+check_packages <- function(packages) {
+  if (all(packages %in% rownames(installed.packages()))) {
+    TRUE
+  } else {
+    cat(
+      "Instalar los siguientes packages antes de ejecutar el presente script\n",
+      packages[!(packages %in% rownames(installed.packages()))],
+      "\n"
+    )
+  }
+}
+
+packages_needed <- c("ggplot2", "ggrepel", "plotly", "ggfortify",
+                     "lubridate", "htmlwidgets" , "RColorBrewer",
+                     "sqldf", "grid", "data.table", "readr" )
+
+check_packages(packages_needed)
+```
+
+```{r include=FALSE}
+# Carga de librerías
+library(ggplot2)
+library(ggrepel)
+library(plotly)
+library(ggfortify)
+library(lubridate)
+library(htmlwidgets)
+library(RColorBrewer)
+library(sqldf)
+library(grid)
+library(data.table)
+library(readr)
+library(tidyr)
+library(scales)
+```
+
+```{r}
+# Lectura de datos #############################################################
+URL <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/"
+
+URL_confirmados  <- paste(URL,"time_series_covid19_confirmed_global.csv", sep = "")
+
+COVID_confirmados_h <- read.csv(URL_confirmados, sep = ",", header = T)
+
+URL_muertes   <- paste(URL,"time_series_covid19_deaths_global.csv", sep = "")
+
+COVID_muertes_h <- read.csv(URL_muertes, sep = ",", header = T)
+
+# Preparacion de los datos #####################################################
+# Eliminar columnas no usadas
+
+COVID_confirmados_h  <- select(COVID_confirmados_h,-c('Lat', 'Long', 'Province.State')) 
+COVID_muertes_h      <- select(COVID_muertes_h    ,-c('Lat', 'Long', 'Province.State'))
+
+# cambiar  a formato vertical
+
+COVID_confirmados <- 
+  COVID_confirmados_h %>% 
+  gather(fecha,confirmados,2:ncol(COVID_confirmados_h))
+
+COVID_muertes <- COVID_muertes_h %>%
+  gather(fecha, muertes    , 2:ncol(COVID_muertes_h))
+
+colnames(COVID_confirmados) <- c(  "pais", "date", "confirmados")
+colnames(COVID_muertes)     <- c(  "pais", "date", "muertes")
+
+COVID_confirmados$date <- as.Date(as.character(COVID_confirmados$date), format = "X%m.%d.%y")
+COVID_muertes$date     <- as.Date(as.character(COVID_muertes$date)    , format = "X%m.%d.%y")
+
+COVID_muertes %>% head
+```
+
+```{r}
+# agrupo por pais ( anulo  regiones dentro de cada pais)
+# otra idea a seguir seria tratar a  nivel de region-pais  en lugar de solamente pais)
+
+confirmados_por_pais <- COVID_confirmados %>% 
+  group_by(pais, date) %>% 
+  summarise(confirmados = sum(confirmados)
+            )
+
+muertes_por_pais <- COVID_muertes %>%
+  group_by(pais, date) %>% 
+  summarise(muertes = sum(muertes))
+
+datos <- merge(confirmados_por_pais, muertes_por_pais)
+```
+
+```{r}
+# genero  figura dinamica
+#Trazamos las series de tiempo 
+g1 <- ggplot(datos <- subset(datos, date > "2020-03-15") ,
+             aes(x = date, y = confirmados,  group = pais )) +
+  geom_line(size = 0.3) +
+  ggtitle("Confirmados por país") +
+  scale_x_date(date_breaks = "1 week",  date_labels =  "%d %b") +
+  theme(plot.title = element_text(lineheight = 1,face ='bold'))   +
+  ylab("casos confirmados") +
+  xlab("") +
+  labs(caption = "\nFuente: The Johns Hopkins University Center for Systems Science and Engineering (JHU CSSE)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+g1 <- ggplotly(g1, tooltip = c("pais")) %>%
+  layout(legend = list(
+    orientation = "h",
+    x = 0.7,
+    y = 1
+  )
+  )
+g1
+```
+
+```{r}
+#  idem  pero  con muertes 
+g2 <- ggplot(datos ,aes(x = date, y = muertes,  group = pais )) +
+  geom_line(size = 0.3)+
+  ggtitle("COVID_19 - Muertos por país") +
+  scale_x_date(date_breaks = "1 week", date_labels =  "%d %b") +
+  theme(plot.title = element_text(lineheight = 1,face ='bold'))   +
+  ylab("cantidad de muertos") +
+  xlab("") +
+  labs(caption = "\nFuente: The Johns Hopkins University Center for Systems Science and Engineering (JHU CSSE)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+g2 <- ggplotly(g2, tooltip = c("pais")) %>%
+  layout(legend = list(
+    orientation = "h",
+    x = 0.7,
+    y = 1
+  )
+  )
+g2
+```
+

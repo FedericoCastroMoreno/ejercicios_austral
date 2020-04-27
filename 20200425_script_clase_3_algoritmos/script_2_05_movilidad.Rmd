@@ -1,0 +1,71 @@
+---
+title: "05_movilidad.R GAD"
+author: "Gonzalo Plaza"
+date: "4/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+###############################################################################
+#Script: script_2_05_movilidad.Rmd
+#Descripción: transcripción de script 20200425-Algoritmos-Cdatos-UAustral
+#Autor: Gonzalo Plaza 
+#Email: gonzaloplazagomez@gmail.com
+#Fecha creacion: 25-04-2020
+###############################################################################
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+# graficamos la movilidad  en la ciudad de Buenos Aires
+# 2020-04-25   v.  2020-04-25 
+# GAD
+
+# Librerías
+library(readr)
+library(reshape2)
+library(ggplot2)
+library(plotly)
+library(tidyverse)
+library(data.table) 
+library(tidyr)
+
+# carga de datos
+mobility <- read_csv("data/applemobilitytrends-2020-04-22.csv")
+```
+
+```{r}
+# data wrangling
+mobility$region <- as.factor(mobility$region)
+mobility$transportation_type <- as.factor(mobility$transportation_type)
+
+levels(mobility$region) %>% head
+levels(mobility$transportation_type) %>% head
+
+datos_v <- mobility %>% 
+  gather(fecha, tasa, 4:ncol(mobility))
+
+datos_v$fecha <- as.Date(as.character(datos_v$fecha),format = "%Y-%m-%d")
+```
+
+```{r}
+# Visualización de datos
+pais = "Buenos Aires"
+trans = "walking"
+datos <- subset(datos_v, region == pais & transportation_type == trans)
+
+g1 <- ggplot(datos, aes(x = fecha, y = tasa) ) +
+  geom_line(size = 0.6) +
+  geom_line(linetype = "dashed") +
+  ggtitle(paste("COVID_19 - Movilidad en ",pais,sep = "")) +
+  scale_x_date(date_breaks = "3 day", date_labels =  "%d %b") +
+  #scale_y_continuous(limits = c(0, 100), breaks = seq(1, 10, 1)) +
+  theme(plot.title = element_text(lineheight = 1,face ='bold'))   +
+  ylab("tasa de movilidad") +
+  xlab("") +
+  labs(caption = "Fuente de los datos: apple.com/covid19/mobility") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7)) 
+g1
+```
+
