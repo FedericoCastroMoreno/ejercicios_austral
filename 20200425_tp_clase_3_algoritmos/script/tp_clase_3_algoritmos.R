@@ -93,24 +93,43 @@ df_final$pais <- as.factor(df_final$pais)
 # Establezco fecha en cantidad de días desde el 21 de marzo de 2020
 df_final$fecha <- ymd(df_final$fecha) - ymd("2020-01-21")
 # redondeo
-df_final$conf_por_millon <- round(df_final$conf_por_millon,3)
-df_final$decesos_por_millon <- round(df_final$decesos_por_millon,3)
+df_final$conf_por_millon <- round(df_final$conf_por_millon,0)
+df_final$decesos_por_millon <- round(df_final$decesos_por_millon,0)
 
 # 8. Gráfica 1 ----
-seleccion_paises <- c("Argentina", "Bolivia", "Brazil", "Chile", "Colombia",
-                      "Peru", "Paraguay", "US", "China")
-
-
 df_final$pais %>% unique
-fig_1 <- df_final %>%
+
+seleccion_paises <- c("Argentina", "Bolivia", "Brazil", "Chile", "Colombia",
+                      "Peru", "Paraguay","Uruguay", "Ecuador", "China", "US", "Russia",
+                      "France", "Italy", "Spain", "South Africa", "Turkey", "Iran", 
+                      "Portugal", "Norway", "Nicaragua", "Poland", "Rwanda", "New Zeland",
+                      "Switzerland", "Thailand", "United Kingdom")
+
+
+fig_1 <- 
+    df_final %>%
     filter(pais %in% seleccion_paises) %>% 
     plot_ly(
         x = ~ conf_por_millon, 
         y = ~ decesos_por_millon,
+        hoverinfo = 'text',
+        text = ~ paste("País: ", pais, "<br>Casos por millon: ", conf_por_millon, "<br>Decesos por millon: ", decesos_por_millon ),
         color = ~ pais,
+        colors = "Paired",
         type = 'scatter',
         mode = 'markers',
-        frame = ~ fecha,
-        size = ~ PopTotal)
+        marker = list(opacity = 0.8, sizemode = "diameter",line = list(width = 2, color = '#FFFFFF')),
+        size = ~ PopTotal, 
+        sizes = c(30, 60),
+        frame = ~ fecha) %>% 
+    layout(title = "",
+           xaxis = list(title = "Casos confirmados (por millón hab.)"),
+           yaxis = list(title = "Casos de muerte (por millón hab.)"),
+           paper_bgcolor = 'rgb(255, 229, 229)',
+           plot_bgcolor = 'rgb(255, 229, 229)'
+    ) %>% 
+    animation_slider(
+        currentvalue = list(prefix = "Días desde el 21 de Enero: ", font = list(color="red"))
+    )
 
 fig_1
