@@ -23,7 +23,7 @@ df_base_m <-
 # Carga data habitantes
 # df_p <- read_csv("https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2019_TotalPopulationBySex.csv")
 # write_csv(df_p, "20200425_script_clase_3_algoritmos/data/data_pobl_mundial.csv")
-df_base_p <- read_csv("20200425_script_clase_3_algoritmos/data/data_pobl_mundial.csv")
+df_base_p <- read_csv("20200425_tp_clase_3_algoritmos/data/data_pobl_mundial.csv")
 
 # 3. Procesamiento data df_confirmed ----
 df_conf <- 
