@@ -133,3 +133,48 @@ fig_1 <-
     )
 
 fig_1
+
+
+# 9. Procesamiento data df_covid19 ----
+
+df_base_confirmed <- 
+  read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
+
+df_base_m <- 
+  read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv")
+
+df_covid19 <- mutate(df_base_confirmed, Categoria = "Confirmados") %>% 
+           bind_rows(mutate(df_base_m, Categoria = "Muertes")) %>% 
+           rename("Pais" = `Country/Region`) %>%
+           select(2,Categoria,seq(5,107,3)) %>% 
+           pivot_longer(3:37, names_to = "Fecha", values_to = "Casos") %>%
+           mutate(Fecha = mdy(str_remove(Fecha, "X")))
+
+options(scipen = 20)
+
+paises_a_comparar <- c("Argentina", "Brazil", "Chile","Italy","United Kingdom",
+                       "Spain", "France", "US", "China")
+# 10. Gráfica 2 ----
+fig_2 <- df_covid19 %>% 
+  filter(Pais %in% paises_a_comparar) %>% 
+  group_by(Categoria, Fecha, Pais) %>% 
+  summarise(Casos = sum(Casos)) %>% 
+  ggplot() +
+  geom_col(aes(x = Fecha, y = Casos, fill = Categoria)) +
+  facet_wrap(~Pais, scales = "free") +
+  scale_fill_brewer(palette = "Set2") +
+  labs(title = "COVID19: Evolución de Casos",
+       fill = "Situación",
+       caption = "\nFuente: The Johns Hopkins University Center for Systems Science and Engineering (JHU CSSE)",
+       y = NULL, x = NULL) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+fig_2 <- ggplotly(fig_2, tooltip = c("Categoria","Casos")) %>%
+  layout(legend = list(orientation = "v",x = 1,y = 1)) %>%
+  layout(annotations = list(x = 1.25, y = -0.07, text = "Fuente: The Johns Hopkins University Center for Systems Science and Engineering (JHU CSSE)", 
+                          showarrow = F, xref='paper', yref='paper', 
+                           xanchor='right', yanchor='auto', xshift=0, yshift=0,
+                            font=list(size=9, color="grey")))
+fig_2
+
